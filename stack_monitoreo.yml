@@ -1,0 +1,83 @@
+version: "3.7"
+
+volumes:
+  prometheus_data: {}
+  grafana_data: {}
+
+services:
+  prometheus:
+    image: prom/prometheus:v2.33.1
+    deploy:
+      placement:
+        constraints:
+          - node.role==manager
+      restart_policy:
+        condition: on-failure
+    volumes:
+      - ./prometheus/prometheus.yml:/etc/prometheus/prometheus.yml
+      - prometheus_data:/prometheus
+    ports:
+      - "9090:9090"
+
+  # cadvisor:
+  #   image: gcr.io/cadvisor/cadvisor:v0.43.0
+  #   # extra_hosts:
+  #   #   # permite conocer la ip del host dentro del contenedor
+  #   #   - "host.docker.internal:host-gateway"
+  #   deploy:
+  #     # mode: global
+  #     resources:
+  #       limits:
+  #         memory: 128M
+  #       reservations:
+  #         memory: 64M
+  #     restart_policy:
+  #       condition: on-failure
+  #     endpoint_mode: dnsrr
+  #   # command: -docker_only
+  #   # ports:
+  #   #   - "8080:8080"
+  #   volumes:
+  #     - /var/run/docker.sock,dst=/var/run/docker.sock,ro
+  #     - /:/rootfs:ro
+  #     - /var/run:/var/run
+  #     - /sys:/sys:ro
+  #     - /var/lib/docker:/var/lib/docker:ro
+  #   # networks:
+  #   #   - monitoreo
+
+  # node-exporter:
+  #   image: prom/node-exporter:v1.3.1
+  #   volumes:
+  #     - /proc:/host/proc:ro
+  #     - /sys:/host/sys:ro
+  #     - /:/rootfs:ro
+  #   command:
+  #     - '--path.procfs=/host/proc'
+  #     - '--path.sysfs=/host/sys'
+  #     - --collector.filesystem.ignored-mount-points
+  #     - "^/(sys|proc|dev|host|etc|rootfs/var/lib/docker/containers|rootfs/var/lib/docker/overlay2|rootfs/run/docker/netns|rootfs/var/lib/docker/aufs)($$|/)"
+  #   # ports:
+  #   #   - 9100:9100
+  #   # networks:
+  #   #   - monitoreo
+  #   deploy:
+  #     # mode: global
+  #     endpoint_mode: dnsrr
+  #     restart_policy:
+  #       condition: on-failure
+
+  grafana:
+    image: grafana/grafana:8.2.6
+    ports:
+      - 3000:3000
+    volumes:
+      - grafana_data:/var/lib/grafana
+      - ./grafana/provisioning/:/etc/grafana/provisioning/
+    user: "472"
+    deploy:
+      placement:
+        constraints:
+          - node.role==manager
+      restart_policy:
+        condition: on-failure
